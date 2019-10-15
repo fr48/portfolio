@@ -13,29 +13,45 @@ const svg = d3
   .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')')
 
 const xPositionScale = d3
-  .scaleLinear()
-  .domain([0, 70000])
+  .scalePoint()
+  .domain([2014, 2015, 2016, 2017, 2018, 2019])
   .range([0, width])
 
 const yPositionScale = d3
   .scaleLinear()
-  .domain([0, 80])
+  .domain([0, 870])
   .range([height, 0])
 
-d3.csv(require('../data/countries.csv')).then(ready)
+const colorScale = d3.scaleOrdinal().range(['#7bccc4', '#2b8cbe'])
+
+const line = d3
+  .line()
+  .x(d => xPositionScale(d.year))
+  .y(d => yPositionScale(d.counts))
+
+d3.csv(require('../data/breach-losses.csv'))
+  .then(ready)
+  .catch(err => {
+    console.log(err)
+  })
 
 function ready(datapoints) {
-  console.log('Data read in:', datapoints)
+  const nested = d3
+    .nest()
+    .key(function(d) {
+      return d.orgtype
+    })
+    .entries(datapoints)
 
   svg
-    .selectAll('circle')
-    .data(datapoints)
+    .selectAll('g')
+    .data(nested)
     .enter()
-    .append('circle')
-    .attr('r', 2)
-    .attr('cx', d => xPositionScale(d.gdp_per_capita))
-    .attr('cy', d => yPositionScale(d.life_expectancy))
-    .attr('fill', 'pink')
+    .append('path')
+    .attr('d', d => line(d.values))
+    .attr('fill', 'none')
+    .attr('stroke', d => colorScale(d.key))
+    .attr('stroke-width', 1.5)
 
   const yAxis = d3.axisLeft(yPositionScale)
   svg

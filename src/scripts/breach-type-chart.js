@@ -14,7 +14,7 @@ const svg = d3
 
 const xPositionScale = d3
   .scaleBand()
-  .domain(['2018, 1H', '2018, 2H', '2019, 1H'])
+  .domain(['20181H', '20182H', '20191H'])
   .range([0, width])
 
 const yPositionScale = d3
@@ -22,60 +22,48 @@ const yPositionScale = d3
   .domain([0, 250000])
   .range([height, 0])
 
-const totals = [
-  {'datatype':'SSN',
-  'values':[{
-    year: '2018, 1H',
-    counts: 175802
-  },
-  { year: '2018, 2H', counts: 55098 },
-  { year: '2019, 1H', counts: 241009 }]},
-  {'datatype':'Account'
-  'values':[{
-    year: '2018, 1H',
-    counts: 150802
-  },
-  { year: '2018, 2H', counts: 59198 },
-  { year: '2019, 1H', counts: 190009 }]},
-  {'datatype':'Payment',
-  'values':[{
-    year: '2018, 1H',
-    counts: 100802
-  },
-  { year: '2018, 2H', counts: 65098 },
-  { year: '2019, 1H', counts: 161009 }]},
-  {'datatype':'DrivingLicense',
-  'values':[{
-    year: '2018, 1H',
-    counts: 25802
-  },
-  { year: '2018, 2H', counts: 10098 },
-  { year: '2019, 1H', counts: 45009 }]},
-]
+const colorScale = d3
+  .scaleOrdinal()
+  .domain(['SSN', 'AccountNumber', 'PaymentCards', 'DrivingLicense'])
+  .range(['#edf8fb', '#b2e2e2', '#66c2a4', '#238b45'])
 
-svg
-  .selectAll('rect')
-  .data(totals)
-  .enter()
-  .append('rect')
-  .attr('width', width / totals.length - 10)
-  .attr('height', d => {
-    return height - yPositionScale(d.counts)
+d3.csv(require('../data/breach-types.csv'))
+  .then(ready)
+  .catch(err => {
+    console.log(err)
   })
 
-  .attr('x', d => xPositionScale(d.year))
-  .attr('y', d => yPositionScale(d.counts))
-  .attr('fill', 'pink')
+function ready(datapoints) {
+  const nested = d3
+    .nest()
+    .key(function(d) {
+      return d.datatype
+    })
+    .entries(datapoints)
 
-const yAxis = d3.axisLeft(yPositionScale)
-svg
-  .append('g')
-  .attr('class', 'axis y-axis')
-  .call(yAxis)
+  const names = nested.map(d => d.keys)
+  console.log(names)
 
-const xAxis = d3.axisBottom(xPositionScale)
-svg
-  .append('g')
-  .attr('class', 'axis x-axis')
-  .attr('transform', 'translate(0,' + height + ')')
-  .call(xAxis)
+  const typeList = nested.map(d => d.values)
+  console.log(typeList)
+
+  svg
+    .selectAll('.datatypes')
+    .data(nested)
+    .enter()
+    .append('rect')
+    .attr('fill', d => colorScale(d.key))
+
+  const yAxis = d3.axisLeft(yPositionScale)
+  svg
+    .append('g')
+    .attr('class', 'axis y-axis')
+    .call(yAxis)
+
+  const xAxis = d3.axisBottom(xPositionScale)
+  svg
+    .append('g')
+    .attr('class', 'axis x-axis')
+    .attr('transform', 'translate(0,' + height + ')')
+    .call(xAxis)
+}
